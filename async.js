@@ -15,7 +15,7 @@ class AsyncRunner {
 
     run() {
         return new Promise(resolve => {
-            if (!this._pendingPromises.length) {
+            if (this._parallelNum < 1 || !this._pendingPromises.length) {
                 resolve([]);
             }
 
@@ -34,11 +34,8 @@ class AsyncRunner {
         this._result[index] = data;
         if (++this._finishedJobsCount >= this._jobsCount) {
             resolve(this._result);
-        }
-
-        const promise = this._pendingPromises.shift();
-        if (promise) {
-            this._runNext(resolve, promise);
+        } else if (this._pendingPromises.length) {
+            this._runNext(resolve, this._pendingPromises.shift());
         }
     }
 
