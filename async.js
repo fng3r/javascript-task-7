@@ -46,7 +46,7 @@ class AsyncRunner {
             job()
                 .then(resolve)
                 .catch(reject);
-            setTimeout(() => reject(new Error('Promise timeout')), timeout);
+            setTimeout(() => resolve(new Error('Promise timeout')), timeout);
         });
     }
 }
