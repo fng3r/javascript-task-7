@@ -16,13 +16,13 @@ class AsyncRunner {
     run() {
         return new Promise(resolve => {
             if (this._parallelNum > 0 && this._pendingPromises.length) {
-                for (const promise of this._pendingPromises.splice(0, this._parallelNum)) {
+                const promisesToBeRan = this._pendingPromises.splice(0, this._parallelNum);
+                for (const promise of promisesToBeRan) {
                     this._runNext(resolve, promise);
                 }
             } else {
                 resolve([]);
             }
-
         });
     }
 
