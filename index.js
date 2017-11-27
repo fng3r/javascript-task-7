@@ -34,10 +34,10 @@ const text = 'дайте мне воды';
 const jobs = langs.map(lang => getTranslation.bind(null, lang, text));
 
 async
-    .runParallel(jobs, 2)
+    .runParallel(jobs, 12)
     .then(result => {
         return result
-            .map(item => item instanceof Error ? item : JSON.parse(item).text[0])
+            .map((item, i) => `${i} ${(item instanceof Error ? item : JSON.parse(item).text[0])}`)
             .join('\n');
     })
     .then(console.log);
