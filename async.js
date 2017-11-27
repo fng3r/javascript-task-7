@@ -1,6 +1,6 @@
 'use strict';
 
-exports.isStar = false;
+exports.isStar = true;
 exports.runParallel = runParallel;
 
 class AsyncRunner {
@@ -16,8 +16,8 @@ class AsyncRunner {
     run() {
         return new Promise(resolve => {
             if (this._parallelNum > 0 && this._jobsCount) {
-                const promisesToBeRan = this._pendingPromises.splice(0, this._parallelNum);
-                for (const promise of promisesToBeRan) {
+                const promisesToBeRun = this._pendingPromises.splice(0, this._parallelNum);
+                for (const promise of promisesToBeRun) {
                     this._runNext(resolve, promise);
                 }
             } else {
@@ -33,7 +33,8 @@ class AsyncRunner {
 
     _onResponse(resolve, index, data) {
         this._result[index] = data;
-        if (++this._finishedJobsCount === this._jobsCount) {
+        if (++this._finishedJobsCount === this._jobsCount &&
+            this._result.length === this._jobsCount) {
             resolve(this._result);
         } else if (this._pendingPromises.length) {
             this._runNext(resolve, this._pendingPromises.shift());
