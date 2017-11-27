@@ -6,8 +6,8 @@ exports.runParallel = runParallel;
 class AsyncRunner {
     constructor(jobs, parallelNum, timeout) {
         this._jobsCount = jobs.length;
-        this._pendingPromises = jobs
-            .map((job, index) => ({ promise: this._getPromiseWithTimeout(job, timeout), index }));
+        this._pendingJobs = jobs
+            .map((job, index) => [index, this._getPromiseWithTimeout(job, timeout)]);
         this._parallelNum = parallelNum;
         this._result = [];
         this._finishedJobsCount = 0;
@@ -16,9 +16,9 @@ class AsyncRunner {
     run() {
         return new Promise(resolve => {
             if (this._parallelNum > 0 && this._jobsCount) {
-                const promisesToBeRun = this._pendingPromises.splice(0, this._parallelNum);
-                for (const promise of promisesToBeRun) {
-                    this._runNext(resolve, promise);
+                const jobsToBeRun = this._pendingJobs.splice(0, this._parallelNum);
+                for (const job of jobsToBeRun) {
+                    this._runNext(resolve, ...job);
                 }
             } else {
                 resolve([]);
@@ -26,18 +26,17 @@ class AsyncRunner {
         });
     }
 
-    _runNext(resolve, { index, promise }) {
+    _runNext(resolve, index, promise) {
         const cb = data => this._onResponse(resolve, index, data);
         promise.then(cb).catch(cb);
     }
 
     _onResponse(resolve, index, data) {
         this._result[index] = data;
-        if (++this._finishedJobsCount === this._jobsCount &&
-            this._result.length === this._jobsCount) {
+        if (++this._finishedJobsCount === this._jobsCount) {
             resolve(this._result);
-        } else if (this._pendingPromises.length) {
-            this._runNext(resolve, this._pendingPromises.shift());
+        } else if (this._pendingJobs.length) {
+            this._runNext(resolve, ...this._pendingJobs.shift());
         }
     }
 
@@ -46,7 +45,7 @@ class AsyncRunner {
             job()
                 .then(resolve)
                 .catch(reject);
-            setTimeout(() => resolve(new Error('Promise timeout')), timeout);
+            setTimeout(() => reject(new Error('Promise timeout')), timeout);
         });
     }
 }
