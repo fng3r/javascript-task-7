@@ -15,7 +15,7 @@ class AsyncRunner {
 
     run() {
         return new Promise(resolve => {
-            if (this._parallelNum > 0 && this._pendingPromises.length) {
+            if (this._parallelNum > 0 && this._jobsCount) {
                 const promisesToBeRan = this._pendingPromises.splice(0, this._parallelNum);
                 for (const promise of promisesToBeRan) {
                     this._runNext(resolve, promise);
@@ -33,7 +33,7 @@ class AsyncRunner {
 
     _onResponse(resolve, index, data) {
         this._result[index] = data;
-        if (++this._finishedJobsCount >= this._jobsCount) {
+        if (++this._finishedJobsCount === this._jobsCount) {
             resolve(this._result);
         } else if (this._pendingPromises.length) {
             this._runNext(resolve, this._pendingPromises.shift());
@@ -42,10 +42,10 @@ class AsyncRunner {
 
     _getPromiseWithTimeout(job, timeout) {
         return new Promise((resolve, reject) => {
-            setTimeout(() => reject(new Error('Promise timeout')), timeout);
             job()
                 .then(resolve)
                 .catch(reject);
+            setTimeout(() => reject(new Error('Promise timeout')), timeout);
         });
     }
 }
