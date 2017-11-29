@@ -10,8 +10,6 @@ exports.runParallel = runParallel;
  * @returns {Promise<[]>} - промис, который зарезолвится c массивом результатов выполнения jobs
  */
 function runParallel(jobs, parallelNum, timeout = 1000) {
-    const pendingJobs = jobs
-        .map((job, index) => [index, getPromiseWithTimeout(job, timeout)]);
     const result = [];
     let finishedJobsCount = 0;
 
@@ -19,30 +17,26 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         if (parallelNum < 1 || !jobs.length) {
             resolve([]);
         } else {
-            for (const job of pendingJobs.splice(0, parallelNum)) {
-                runNext(resolve, ...job);
+            for (let i = 0; i < parallelNum; i++) {
+                runNext(resolve, i);
             }
         }
     });
 
-    function runNext(resolve, index, promise) {
+    function runNext(resolve, index) {
         const cb = data => onResponse(resolve, index, data);
-        promise.then(cb).catch(cb);
+        new Promise((innerResolve, innerReject) => {
+            jobs[index]().then(innerResolve, innerReject);
+            setTimeout(() => innerReject(new Error('Promise timeout')), timeout);
+        }).then(cb, cb);
     }
 
     function onResponse(resolve, index, data) {
         result[index] = data;
         if (++finishedJobsCount === jobs.length) {
             resolve(result);
-        } else if (pendingJobs.length) {
-            runNext(resolve, ...pendingJobs.shift());
+        } else {
+            runNext(resolve, finishedJobsCount);
         }
-    }
-
-    function getPromiseWithTimeout(job) {
-        return new Promise((resolve, reject) => {
-            job().then(resolve, resolve);
-            setTimeout(() => reject(new Error('Promise timeout')), timeout);
-        });
     }
 }
