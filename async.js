@@ -11,32 +11,34 @@ exports.runParallel = runParallel;
  */
 function runParallel(jobs, parallelNum, timeout = 1000) {
     const result = [];
+    let startedJobsCount = 0;
     let finishedJobsCount = 0;
 
     return new Promise(resolve => {
-        if (parallelNum < 1 || !jobs.length) {
+        if (!jobs.length) {
             resolve([]);
         } else {
-            for (let i = 0; i < parallelNum; i++) {
-                runNext(resolve, i);
+            while (startedJobsCount < parallelNum) {
+                runNext(resolve, startedJobsCount++);
             }
         }
     });
 
-    function runNext(resolve, index) {
-        const cb = data => onResponse(resolve, index, data);
+    function runNext(resolve, jobIndex) {
+        const cb = data => onResponse(resolve, jobIndex, data);
+
         new Promise((innerResolve, innerReject) => {
-            jobs[index]().then(innerResolve, innerReject);
+            jobs[jobIndex]().then(innerResolve, innerReject);
             setTimeout(() => innerReject(new Error('Promise timeout')), timeout);
         }).then(cb, cb);
     }
 
     function onResponse(resolve, index, data) {
         result[index] = data;
-        if (++finishedJobsCount === jobs.length) {
+        if (jobs.length === ++finishedJobsCount) {
             resolve(result);
-        } else {
-            runNext(resolve, finishedJobsCount);
+        } else if (startedJobsCount < jobs.length) {
+            runNext(resolve, startedJobsCount++);
         }
     }
 }
