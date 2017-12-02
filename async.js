@@ -16,16 +16,16 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
 
     return new Promise(resolve => {
         if (!jobs.length) {
-            resolve([]);
-        } else {
-            while (startedJobsCount < parallelNum) {
-                runNext(resolve, startedJobsCount++);
-            }
+            return resolve([]);
+        }
+
+        while (startedJobsCount < parallelNum) {
+            runNext(resolve, startedJobsCount++);
         }
     });
 
     function runNext(resolve, jobIndex) {
-        const cb = data => onResponse(resolve, jobIndex, data);
+        const cb = data => onJobFinished(resolve, jobIndex, data);
 
         new Promise((innerResolve, innerReject) => {
             jobs[jobIndex]().then(innerResolve, innerReject);
@@ -33,8 +33,8 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         }).then(cb, cb);
     }
 
-    function onResponse(resolve, index, data) {
-        result[index] = data;
+    function onJobFinished(resolve, jobIndex, data) {
+        result[jobIndex] = data;
         if (jobs.length === ++finishedJobsCount) {
             resolve(result);
         } else if (startedJobsCount < jobs.length) {
