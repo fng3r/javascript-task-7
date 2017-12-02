@@ -19,7 +19,7 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
             return resolve([]);
         }
 
-        while (startedJobsCount < parallelNum) {
+        while (startedJobsCount < parallelNum && startedJobsCount < jobs.length) {
             runNext(resolve, startedJobsCount++);
         }
     });
